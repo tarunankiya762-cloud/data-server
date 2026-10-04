@@ -1,29 +1,560 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DATA SERVER</title>
-<style>
-body{margin:0;font-family:Arial,sans-serif;background:#0b1020;color:white}
-header{background:#111a33;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
-.logo{font-size:24px;font-weight:bold} nav a{color:white;text-decoration:none;margin-left:16px}
-.hero{text-align:center;padding:70px 20px;background:linear-gradient(135deg,#16234a,#0b1020)}
-.hero h1{font-size:42px;margin:0 0 15px}.hero p{color:#cbd5e1;font-size:18px}
-.btn{display:inline-block;margin-top:20px;padding:13px 24px;background:#2563eb;color:white;text-decoration:none;border-radius:8px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1000px;margin:40px auto;padding:0 20px}
-.card{background:#151f3b;border:1px solid #29385f;border-radius:14px;padding:25px;text-align:center}.card p{color:#cbd5e1;line-height:1.5}
-footer{text-align:center;padding:30px;color:#94a3b8}
-@media(max-width:700px){.hero h1{font-size:32px}.cards{grid-template-columns:1fr}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DATA SERVER</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f7fb;
+      color: #222;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 18px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 28px;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 25px auto;
+      padding: 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,.08);
+    }
+
+    h2 {
+      margin-bottom: 15px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      margin: 7px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 5px 3px;
+      font-size: 15px;
+    }
+
+    .main-btn {
+      background: #2563eb;
+      color: white;
+    }
+
+    .logout {
+      background: #dc2626;
+      color: white;
+    }
+
+    .download {
+      background: #16a34a;
+      color: white;
+    }
+
+    .delete {
+      background: #dc2626;
+      color: white;
+    }
+
+    #app {
+      display: none;
+    }
+
+    .file {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 10px 0;
+      word-break: break-word;
+    }
+
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      background: #eef2ff;
+    }
+
+    small {
+      color: #666;
+    }
+  </style>
 </head>
+
 <body>
-<header><div class="logo">DATA SERVER</div><nav><a href="#">Home</a><a href="#data">Data</a><a href="#login">Login</a></nav></header>
-<section class="hero"><h1>Welcome to DATA SERVER</h1><p>Your simple place to manage and access your data.</p><a class="btn" href="#data">Get Started</a></section>
-<section class="cards" id="data">
-<div class="card"><h2>📁 My Data</h2><p>Keep your important data organized and easy to access.</p></div>
-<div class="card"><h2>☁️ Cloud Storage</h2><p>Access your files and information from anywhere.</p></div>
-<div class="card" id="login"><h2>🔐 Secure Access</h2><p>A simple space for your personal data and projects.</p></div>
-</section>
-<footer>© 2026 DATA SERVER • All Rights Reserved</footer>
-</body></html>
+
+<header>
+  <h1>☁️ DATA SERVER</h1>
+  <p>Your Personal Cloud Storage</p>
+</header>
+
+<div class="container">
+
+  <!-- LOGIN -->
+  <div class="card" id="loginBox">
+    <h2>🔐 Login</h2>
+
+    <input type="email" id="loginEmail" placeholder="Email">
+    <input type="password" id="loginPassword" placeholder="Password">
+
+    <button class="main-btn" onclick="login()">Login</button>
+    <button onclick="signup()">Create Account</button>
+
+    <div class="status" id="loginStatus"></div>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+
+    <div class="card">
+      <h2>👤 My Account</h2>
+      <p id="userEmail"></p>
+
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="card">
+      <h2>📤 Upload File</h2>
+
+      <input type="file" id="fileInput">
+
+      <button class="main-btn" onclick="uploadFile()">
+        Upload
+      </button>
+
+      <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>📁 My Files</h2>
+
+      <button class="main-btn" onclick="loadFiles()">
+        🔄 Refresh Files
+      </button>
+
+      <div id="fileList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+  /* ==============================
+     SUPABASE SETTINGS
+     ============================== */
+
+  const SUPABASE_URL =
+    "https://qhsnnbxyzwuzazodqytg.supabase.co";
+
+  /*
+     अपनी Publishable key नीचे डालें.
+     Secret key यहाँ बिल्कुल न डालें.
+  */
+
+  const SUPABASE_PUBLISHABLE_KEY =
+  sb_publishable_2jub7DOJlXnnFor7cfjRFw_WS-cc-y_
+
+
+  const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+
+  /* ==============================
+     LOGIN
+     ============================== */
+
+  async function login() {
+
+    const email =
+      document.getElementById("loginEmail").value;
+
+    const password =
+      document.getElementById("loginPassword").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    status.innerText = "Logging in...";
+
+    const { error } =
+      await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+      status.innerText = "❌ " + error.message;
+      return;
+    }
+
+    status.innerText = "✅ Login successful";
+  }
+
+
+  /* ==============================
+     SIGN UP
+     ============================== */
+
+  async function signup() {
+
+    const email =
+      document.getElementById("loginEmail").value;
+
+    const password =
+      document.getElementById("loginPassword").value;
+
+    const status =
+      document.getElementById("loginStatus");
+
+    if (!email || !password) {
+      status.innerText =
+        "Please enter email and password.";
+      return;
+    }
+
+    status.innerText = "Creating account...";
+
+    const { data, error } =
+      await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      });
+
+    if (error) {
+      status.innerText = "❌ " + error.message;
+      return;
+    }
+
+    status.innerText =
+      "✅ Account created. Check your email if confirmation is required.";
+  }
+
+
+  /* ==============================
+     LOGOUT
+     ============================== */
+
+  async function logout() {
+
+    await supabaseClient.auth.signOut();
+
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginBox").style.display = "block";
+  }
+
+
+  /* ==============================
+     UPLOAD
+     ============================== */
+
+  async function uploadFile() {
+
+    const input =
+      document.getElementById("fileInput");
+
+    const status =
+      document.getElementById("uploadStatus");
+
+    const file = input.files[0];
+
+    if (!file) {
+      status.innerText = "❌ Please select a file.";
+      return;
+    }
+
+    const {
+      data: { user }
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      status.innerText = "❌ Please login first.";
+      return;
+    }
+
+    status.innerText = "Uploading...";
+
+    /*
+      हर user की files उसके अपने UUID folder में रहेंगी.
+    */
+
+    const safeName =
+      file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    const filePath =
+      user.id + "/" + Date.now() + "_" + safeName;
+
+
+    const { error } =
+      await supabaseClient.storage
+        .from("user-files")
+        .upload(filePath, file);
+
+    if (error) {
+      status.innerText =
+        "❌ Upload failed: " + error.message;
+      return;
+    }
+
+    status.innerText =
+      "✅ File uploaded successfully!";
+
+    input.value = "";
+
+    loadFiles();
+  }
+
+
+  /* ==============================
+     LIST FILES
+     ============================== */
+
+  async function loadFiles() {
+
+    const list =
+      document.getElementById("fileList");
+
+    list.innerHTML = "Loading...";
+
+    const {
+      data: { user }
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      list.innerHTML = "Please login.";
+      return;
+    }
+
+    const { data, error } =
+      await supabaseClient.storage
+        .from("user-files")
+        .list(user.id, {
+          limit: 100,
+          sortBy: {
+            column: "name",
+            order: "desc"
+          }
+        });
+
+    if (error) {
+      list.innerHTML =
+        "❌ " + error.message;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      list.innerHTML =
+        "<p>No files uploaded yet.</p>";
+      return;
+    }
+
+    list.innerHTML = "";
+
+    data.forEach(file => {
+
+      const path =
+        user.id + "/" + file.name;
+
+      const div =
+        document.createElement("div");
+
+      div.className = "file";
+
+      div.innerHTML = `
+        <strong>📄 ${escapeHTML(file.name)}</strong>
+        <br>
+        <small>
+          ${file.metadata?.size
+            ? formatBytes(file.metadata.size)
+            : ""}
+        </small>
+        <br>
+        <button class="download"
+          onclick='downloadFile(${JSON.stringify(path)}, ${JSON.stringify(file.name)})'>
+          ⬇️ Download
+        </button>
+
+        <button class="delete"
+          onclick='deleteFile(${JSON.stringify(path)})'>
+          🗑️ Delete
+        </button>
+      `;
+
+      list.appendChild(div);
+    });
+  }
+
+
+  /* ==============================
+     DOWNLOAD
+     ============================== */
+
+  async function downloadFile(path, filename) {
+
+    const { data, error } =
+      await supabaseClient.storage
+        .from("user-files")
+        .download(path);
+
+    if (error) {
+      alert("Download failed: " + error.message);
+      return;
+    }
+
+    const url =
+      URL.createObjectURL(data);
+
+    const a =
+      document.createElement("a");
+
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+  }
+
+
+  /* ==============================
+     DELETE
+     ============================== */
+
+  async function deleteFile(path) {
+
+    if (!confirm("Delete this file?")) {
+      return;
+    }
+
+    const { error } =
+      await supabaseClient.storage
+        .from("user-files")
+        .remove([path]);
+
+    if (error) {
+      alert("Delete failed: " + error.message);
+      return;
+    }
+
+    loadFiles();
+  }
+
+
+  /* ==============================
+     CHECK LOGIN
+     ============================== */
+
+  async function checkUser() {
+
+    const {
+      data: { user }
+    } = await supabaseClient.auth.getUser();
+
+    if (user) {
+
+      document.getElementById("loginBox")
+        .style.display = "none";
+
+      document.getElementById("app")
+        .style.display = "block";
+
+      document.getElementById("userEmail")
+        .innerText = user.email;
+
+      loadFiles();
+
+    } else {
+
+      document.getElementById("loginBox")
+        .style.display = "block";
+
+      document.getElementById("app")
+        .style.display = "none";
+    }
+  }
+
+
+  supabaseClient.auth.onAuthStateChange(
+    function(event, session) {
+      checkUser();
+    }
+  );
+
+
+  checkUser();
+
+
+  /* ==============================
+     HELPERS
+     ============================== */
+
+  function formatBytes(bytes) {
+
+    if (!bytes) return "";
+
+    const sizes =
+      ["Bytes", "KB", "MB", "GB"];
+
+    const i =
+      Math.floor(
+        Math.log(bytes) / Math.log(1024)
+      );
+
+    return (
+      Math.round(
+        bytes / Math.pow(1024, i) * 100
+      ) / 100
+    ) + " " + sizes[i];
+  }
+
+
+  function escapeHTML(text) {
+
+    return text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+</script>
+
+</body>
+</html>
